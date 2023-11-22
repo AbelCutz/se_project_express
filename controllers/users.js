@@ -2,10 +2,15 @@ const user = require("../models/user");
 
 const getUsers = async (req, res) => {
   try {
-    const users = await user.find();
-    res.json(users);
+    const user = await user.find();
+    res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    if (error.userId === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    } else {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 };
 
@@ -17,7 +22,12 @@ const getUser = async (req, res) => {
     }
     res.json(user);
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    } else {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 };
 
@@ -25,14 +35,19 @@ const createUser = async (req, res) => {
   try {
     const { name, avatar } = req.body;
     if (!name || !avatar) {
-      return res.status(404).json({ error: "Name and Avatar are required" });
+      return res.status(400).json({ message: "Name and Avatar are required" });
     }
     const newUser = new user({ name, avatar });
     const savedUser = await newUser.save();
 
-    res.status(500).json(savedUser);
+    res.status(201).json(savedUser);
   } catch (error) {
-    res.status(500).json({ error: "Internal Server Error" });
+    console.error(error);
+    if (error.name === "ValidationError") {
+      return res.status(400).json({ message: error.message });
+    } else {
+      return res.status(500).json({ error: "Internal Server Error" });
+    }
   }
 };
 
