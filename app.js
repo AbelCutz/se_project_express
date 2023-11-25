@@ -25,10 +25,6 @@ app.use(express.json());
 const routes = require("./routes");
 app.use(routes);
 
-app.use((req, res) => {
-  res.status(404).json({ message: "Requested resource not found" });
-});
-
 app.listen(PORT, () => {
   console.log(`App listening at port ${PORT}`);
   console.log("This is working");
