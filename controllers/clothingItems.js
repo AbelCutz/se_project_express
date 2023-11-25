@@ -1,13 +1,12 @@
-const { ERROR_400, ERROR_404, ERROR_500 } = require("../utils/errors");
-
 const ClothingItem = require("../models/clothingItem");
+const { ERROR_400, ERROR_404, ERROR_500 } = require("../utils/errors");
 
 const getItem = (req, res) => {
   ClothingItem.find({})
     .then((items) => res.send({ items }))
     .catch((error) => {
       console.error(error);
-      if (error.name === "ValidationError") {
+      if (error.name === "CastError") {
         return res
           .status(ERROR_400)
           .json({ message: "Invalid ID in getitems" });
@@ -42,12 +41,14 @@ const createItem = async (req, res) => {
 const deleteItem = (req, res) => {
   const { itemId } = req.params;
   ClothingItem.findByIdAndDelete(itemId)
-    .orFail(() => {
-      const error = new Error("Clothing item not found");
-      error.status = ERROR_404;
-      throw error;
+    .then((item) => {
+      if (!item) {
+        return res
+          .status(ERROR_404)
+          .json({ message: "Clothing item not found" });
+      }
+      res.status(200).json({ message: "The item deleted", data: item });
     })
-    .then((items) => res.status(200).send(items))
     .catch((error) => {
       console.error();
       if (error.name === "CastError") {
@@ -82,24 +83,30 @@ const likeItem = async (req, res) => {
 };
 
 const dislikeItem = async (req, res) => {
-  try {
-    const userId = req.user_id;
-    const item = await ClothingItem.findByIdAndUpdate(
-      req.params.itemId,
-      { $pull: { likes: userId } },
-      { new: true }
-    ).orFail();
-    res.status(200).send({ data: item });
-  } catch (error) {
-    if (error.name === "CastError") {
-      return res
-        .status(ERROR_400)
-        .json({ message: "Invalid ID in dislikeItem" });
-    }
-    res.status(ERROR_500).send({ message: "Error from dislikeItem" });
-  }
+  ClothingItem.findByIdAndUpdate(
+    req.params.itemId,
+    { $pull: { likes: req.user_id } },
+    { new: true }
+  )
+    .then((item) => {
+      if (!item) {
+        return res
+          .status(ERROR_404)
+          .json({ message: "Clothing item not found" });
+      } else {
+        return res.status(200).send({ data: item });
+      }
+    })
+    .catch((error) => {
+      console.error(error);
+      if (error.name === "CastError") {
+        return res
+          .status(ERROR_400)
+          .json({ message: "Invalid ID in dislikeItem" });
+      }
+      res.status(ERROR_500).send({ message: "Error from dislikeItem" });
+    });
 };
-
 module.exports = {
   createItem,
   getItem,
