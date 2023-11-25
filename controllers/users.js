@@ -25,7 +25,7 @@ const getUser = async (req, res) => {
       return res.status(400).json({ message: "Not a vailid Id" });
     }
     if (error.name === "DocumentNotFoundError") {
-      return res.status(404).json({ maessag: "User not found" });
+      return res.status(404).json({ message: "User not found" });
     } else {
       return res.status(500).json({ error: "Internal Server Error" });
     }

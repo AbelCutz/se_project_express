@@ -5,11 +5,14 @@ const ClothingItem = require("../models/clothingItem");
 const getItem = (req, res) => {
   ClothingItem.find({})
     .then((items) => res.send({ items }))
-    .catch((err) => {
-      console.error(
-        `Error ${err.name} with the message ${err.message} has occurred while executing the code`
-      );
-      res.status(ERROR_500).send({ message: "Error from getItems" });
+    .catch((error) => {
+      console.error(error);
+      if (error.name === "ValidationError") {
+        return res
+          .status(ERROR_400)
+          .json({ message: "Invalid ID in getitems" });
+      }
+      es.status(ERROR_500).send({ message: "Error from getItems" });
     });
 };
 const createItem = async (req, res) => {
@@ -46,9 +49,12 @@ const deleteItem = (req, res) => {
     })
     .then((items) => res.status(200).send(items))
     .catch((error) => {
-      console.error(
-        `Error ${error.name} with the message ${error.message} has occurred while executing the code`
-      );
+      console.error();
+      if (error.name === "CastError") {
+        return res
+          .status(ERROR_400)
+          .json({ message: "Invalid ID in deleteItem" });
+      }
       res.status(ERROR_500).send({ message: "Error from deleteItems" });
     });
 };
@@ -67,7 +73,7 @@ const likeItem = async (req, res) => {
     res.status(200).send({ data: item });
   } catch (error) {
     console.error(error);
-    if ((error.name = "ValidationError")) {
+    if (error.name === "CastError") {
       return res.status(ERROR_400).json({ message: "Invalid request" });
     } else {
       return res.status(ERROR_500).json({ message: "Error from likeItem" });
@@ -85,9 +91,11 @@ const dislikeItem = async (req, res) => {
     ).orFail();
     res.status(200).send({ data: item });
   } catch (error) {
-    console.error(
-      `Error ${error.name} with the message ${error.message} has occurred while executing the code`
-    );
+    if (error.name === "CastError") {
+      return res
+        .status(ERROR_400)
+        .json({ message: "Invalid ID in dislikeItem" });
+    }
     res.status(ERROR_500).send({ message: "Error from dislikeItem" });
   }
 };
