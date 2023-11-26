@@ -6,12 +6,7 @@ const getItem = (req, res) => {
     .then((items) => res.send({ items }))
     .catch((error) => {
       console.error(error);
-      if (error.name === "CastError") {
-        return res
-          .status(ERROR_400)
-          .json({ message: "Invalid ID in getitems" });
-      }
-      es.status(ERROR_500).send({ message: "Error from getItems" });
+      res.status(ERROR_500).send({ message: "Error from getItems" });
     });
 };
 const createItem = async (req, res) => {
@@ -25,16 +20,15 @@ const createItem = async (req, res) => {
       weather,
       imageUrl,
       likes,
-      owner: req._id,
+      owner: req.user._id,
     });
-    res.status(201).send({ data: item });
+    return res.status(201).send({ data: item });
   } catch (error) {
     console.error(error);
     if (error.name === "ValidationError") {
       return res.status(ERROR_400).json({ message: error.message });
-    } else {
-      return res.status(ERROR_500).json({ error: "Internal Server Error" });
     }
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -47,7 +41,7 @@ const deleteItem = (req, res) => {
           .status(ERROR_404)
           .json({ message: "Clothing item not found" });
       }
-      res.status(200).json({ message: "The item deleted", data: item });
+      return res.send({ itemId });
     })
     .catch((error) => {
       console.error();
@@ -56,13 +50,13 @@ const deleteItem = (req, res) => {
           .status(ERROR_400)
           .json({ message: "Invalid ID in deleteItem" });
       }
-      res.status(ERROR_500).send({ message: "Error from deleteItems" });
+      return res.status(ERROR_500).send({ message: "Error from deleteItems" });
     });
 };
 
 const likeItem = async (req, res) => {
   try {
-    const userId = req.user_id;
+    const userId = req.user._id;
     const item = await ClothingItem.findByIdAndUpdate(
       req.params.itemId,
       { $addToSet: { likes: userId } },
@@ -71,21 +65,20 @@ const likeItem = async (req, res) => {
     if (!item) {
       return res.status(ERROR_404).send({ message: "Clothing item not found" });
     }
-    res.status(200).send({ data: item });
+    return res.status(200).send({ data: item });
   } catch (error) {
     console.error(error);
     if (error.name === "CastError") {
       return res.status(ERROR_400).json({ message: "Invalid request" });
-    } else {
-      return res.status(ERROR_500).json({ message: "Error from likeItem" });
     }
+    return res.status(ERROR_500).json({ message: "Error from likeItem" });
   }
 };
 
 const dislikeItem = async (req, res) => {
   ClothingItem.findByIdAndUpdate(
     req.params.itemId,
-    { $pull: { likes: req.user_id } },
+    { $pull: { likes: req.user._id } },
     { new: true }
   )
     .then((item) => {
@@ -93,9 +86,8 @@ const dislikeItem = async (req, res) => {
         return res
           .status(ERROR_404)
           .json({ message: "Clothing item not found" });
-      } else {
-        return res.status(200).send({ data: item });
       }
+      return res.status(200).send({ data: item });
     })
     .catch((error) => {
       console.error(error);
@@ -104,7 +96,7 @@ const dislikeItem = async (req, res) => {
           .status(ERROR_400)
           .json({ message: "Invalid ID in dislikeItem" });
       }
-      res.status(ERROR_500).send({ message: "Error from dislikeItem" });
+      return res.status(ERROR_500).send({ message: "Error from dislikeItem" });
     });
 };
 module.exports = {

@@ -5,13 +5,7 @@ const express = require("express");
 
 const app = express();
 
-mongoose.connect(
-  "mongodb://127.0.0.1:27017/wtwr_db",
-  (r) => {
-    console.log("connected to db");
-  },
-  (e) => console.log("DB error", e)
-);
+mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db");
 
 app.use((req, res, next) => {
   req.user = {
@@ -23,9 +17,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 
 const routes = require("./routes");
+
 app.use(routes);
 
-app.listen(PORT, () => {
-  console.log(`App listening at port ${PORT}`);
-  console.log("This is working");
-});
+app.listen(PORT, () => {});

@@ -4,14 +4,10 @@ const { ERROR_400, ERROR_404, ERROR_500 } = require("../utils/errors");
 const getUsers = async (req, res) => {
   try {
     const user = await User.find();
-    res.json(user);
+    return res.json(user);
   } catch (error) {
     console.error(error);
-    if (error.name === "ValidationError") {
-      return res.status(ERROR_400).json({ message: error.message });
-    } else {
-      return res.status(ERROR_500).json({ error: "Internal Server Error" });
-    }
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -19,7 +15,7 @@ const getUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const userData = await User.findById(userId).orFail();
-    res.status(200).json({ data: userData });
+    return res.status(200).json({ data: userData });
   } catch (error) {
     console.error(error);
     if (error.name === "CastError") {
@@ -27,9 +23,8 @@ const getUser = async (req, res) => {
     }
     if (error.name === "DocumentNotFoundError") {
       return res.status(ERROR_404).json({ message: "User not found" });
-    } else {
-      return res.status(ERROR_500).json({ error: "Internal Server Error" });
     }
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -44,14 +39,13 @@ const createUser = async (req, res) => {
     const newUser = new User({ name, avatar });
     const savedUser = await newUser.save();
 
-    res.status(201).json(savedUser);
+    return res.status(201).json(savedUser);
   } catch (error) {
     console.error(error);
     if (error.name === "ValidationError") {
       return res.status(ERROR_400).json({ message: error.message });
-    } else {
-      return res.status(ERROR_500).json({ error: "Internal Server Error" });
     }
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 
@@ -59,30 +53,17 @@ const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const { name, avatar } = req.body;
-    const updateUser = await User.findByIdAndUpdate(
+    const updatesUser = await User.findByIdAndUpdate(
       userId,
       { name, avatar },
       { new: true }
     );
-    if (!updateUser) {
+    if (!updatesUser) {
       return res.status(ERROR_404).json({ error: "User not found" });
     }
-    res.json(updateUser);
+    return res.json(updatesUser);
   } catch (error) {
-    res.status(ERROR_500).json({ error: "Internal Server Error" });
-  }
-};
-
-const deleteUser = async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const deleteUser = await User.findByIdAndDelete(userId);
-    if (!deleteUser) {
-      return res.status(ERROR_404).json({ error: "User not found" });
-    }
-    res.json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(ERROR_500).json({ error: "Internal Server Error" });
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 module.exports = {
@@ -90,5 +71,4 @@ module.exports = {
   getUser,
   createUser,
   updateUser,
-  deleteUser,
 };
