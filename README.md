@@ -21,13 +21,25 @@ The back-end project is focused on creating a server for the WTWR application. Y
 ## Techniques
 
 1. Create a `controller `folder to store the files to define routes.
-   ![Local Image](./images/controllers.png)
 2. Create a folder for `models` to store files with schemas and models.
-   ![Local Image](./images/models.png)
 3. Create a folder `routes` to store file responsible for routing.
-   ![Local Image](./images/routes.png)
 4. Create a `utils `folder for supportive date(error codes mainly).
-   ![Local Image](./images/utils.png)
+
+### controllers
+
+![Local Image](./images/controllers.png)
+
+### models
+
+![Local Image](./images/models.png)
+
+### routes
+
+![Local Image](./images/routes.png)
+
+### utils
+
+![Local Image](./images/utils.png)
 
 ## Running the Project
 
