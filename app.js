@@ -9,7 +9,7 @@ mongoose.connect("mongodb://127.0.0.1:27017/wtwr_db");
 
 app.use((req, res, next) => {
   req.user = {
-    _id: "63359607631bc44a6dfb0da9",
+    _id: "",
   };
   next();
 });

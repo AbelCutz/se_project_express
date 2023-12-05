@@ -1,5 +1,13 @@
 const User = require("../models/user");
-const { ERROR_400, ERROR_404, ERROR_500 } = require("../utils/errors");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+const { JWT_SECRET } = require("../utils/config");
+const {
+  ERROR_400,
+  ERROR_401,
+  ERROR_404,
+  ERROR_500,
+} = require("../utils/errors");
 
 const getUsers = async (req, res) => {
   try {
@@ -28,20 +36,51 @@ const getUser = async (req, res) => {
   }
 };
 
+const getCurrentUser = async (req, res) => {
+  try {
+    const userData = req.user;
+
+    const response = {
+      _id: userData._id,
+      name: userData.name,
+      email: userData.email,
+    };
+    return res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    return res.status(ERROR_500).json({ message: "Internal Sever Error" });
+  }
+};
+
 const createUser = async (req, res) => {
   try {
-    const { name, avatar } = req.body;
-    if (!name || !avatar) {
+    const { name, avatar, email, password } = req.body;
+    if (!name || !avatar || !email || !password) {
       return res
         .status(ERROR_400)
-        .json({ message: "Name and Avatar are required" });
+        .json({ message: "Name, Avatar, Eamil and Password are required" });
     }
-    const newUser = new User({ name, avatar });
+
+    const existingUser = await User.findOne({ email }.select("+password"));
+    if (existingUser) {
+      return res
+        .status(ERROR_400)
+        .json({ message: "User with this email already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = new User({ name, avatar, email, password: hashedPassword });
     const savedUser = await newUser.save();
 
     return res.status(201).json(savedUser);
   } catch (error) {
     console.error(error);
+    if (error.code === 11000) {
+      return res
+        .status(ERROR_400)
+        .json({ message: "User with this email already exists" });
+    }
     if (error.name === "ValidationError") {
       return res.status(ERROR_400).json({ message: error.message });
     }
@@ -49,6 +88,26 @@ const createUser = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const user = await User.findUserByCredentials({ email });
+    if (!user) {
+      throw new Error("Incorrect email or password");
+    }
+
+    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    if (!isPasswordMatch) {
+      throw new Error("Incorrect email or password");
+    }
+
+    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    return res.status(200).json({ token });
+  } catch (error) {
+    return res.status(ERROR_401).json({ message: error.message });
+  }
+};
 const updateUser = async (req, res) => {
   try {
     const { userId } = req.params;
@@ -66,9 +125,45 @@ const updateUser = async (req, res) => {
     return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
+
+const updateProfile = async (req, res) => {
+  try {
+    const { name, avatar } = req.body;
+
+    if (!name && !avatar) {
+      return res
+        .status(ERROR_400)
+        .json({ message: "Name or Avatar is required for update" });
+    }
+
+    const updatedUser = {};
+    if (name) updatedUser.name = name;
+    if (avatar) updatedUser.avatar = avatar;
+
+    const userId = req.user._id;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $set: updatedUser },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(ERROR_404).json({ message: "User not found" });
+    }
+    return res.status(200).json(user);
+  } catch (error) {
+    if (error.name === "ValidationError") {
+      return res.status(ERROR_400).json({ message: "Internal Server Error" });
+    }
+  }
+};
+
 module.exports = {
   getUsers,
   getUser,
   createUser,
   updateUser,
+  login,
+  getCurrentUser,
+  updateProfile,
 };

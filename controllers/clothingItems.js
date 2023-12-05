@@ -1,5 +1,11 @@
+const { restart } = require("nodemon");
 const ClothingItem = require("../models/clothingItem");
-const { ERROR_400, ERROR_404, ERROR_500 } = require("../utils/errors");
+const {
+  ERROR_400,
+  ERROR_403,
+  ERROR_404,
+  ERROR_500,
+} = require("../utils/errors");
 
 const getItem = (req, res) => {
   ClothingItem.find({})
@@ -32,26 +38,33 @@ const createItem = async (req, res) => {
   }
 };
 
-const deleteItem = (req, res) => {
-  const { itemId } = req.params;
-  ClothingItem.findByIdAndDelete(itemId)
-    .then((item) => {
-      if (!item) {
-        return res
-          .status(ERROR_404)
-          .json({ message: "Clothing item not found" });
-      }
-      return res.send({ itemId });
-    })
-    .catch((error) => {
-      console.error();
-      if (error.name === "CastError") {
-        return res
-          .status(ERROR_400)
-          .json({ message: "Invalid ID in deleteItem" });
-      }
-      return res.status(ERROR_500).send({ message: "Error from deleteItems" });
-    });
+const deleteItem = async (req, res) => {
+  try {
+    const { itemId } = req.params;
+    const userId = req.user._id;
+
+    const item = await ClothingItem.findById(itemId);
+
+    if (!item) {
+      return res.status(ERROR_404).json({ message: "Clothing item not found" });
+    }
+
+    if (item.owner.toString() !== userId.toString()) {
+      return res
+        .status(ERROR_403)
+        .json({ message: "You do not have permission to delete this item" });
+    }
+    await item.remove();
+    return res.status(200).json({ itemId });
+  } catch (error) {
+    console.error();
+    if (error.name === "CastError") {
+      return res
+        .status(ERROR_400)
+        .json({ message: "Invalid ID in deleteItem" });
+    }
+    return res.status(ERROR_500).send({ message: "Error from deleteItems" });
+  }
 };
 
 const likeItem = async (req, res) => {
