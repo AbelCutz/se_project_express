@@ -6,6 +6,7 @@ const {
   ERROR_400,
   ERROR_401,
   ERROR_404,
+  ERROR_409,
   ERROR_500,
 } = require("../utils/errors");
 
@@ -38,6 +39,12 @@ const getUser = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
+    if (!req.user) {
+      return res
+        .status(ERROR_401)
+        .json({ message: "Unauthorized - User not authenticated" });
+    }
+
     const userData = req.user;
 
     const response = {
@@ -58,13 +65,13 @@ const createUser = async (req, res) => {
     if (!name || !avatar || !email || !password) {
       return res
         .status(ERROR_400)
-        .json({ message: "Name, Avatar, Eamil and Password are required" });
+        .json({ message: "Name, Avatar, Email and Password are required" });
     }
 
-    const existingUser = await User.findOne({ email }.select("+password"));
+    const existingUser = await User.findOne({ email }).select("+password");
     if (existingUser) {
       return res
-        .status(ERROR_400)
+        .status(ERROR_409)
         .json({ message: "User with this email already exists" });
     }
 
@@ -78,7 +85,7 @@ const createUser = async (req, res) => {
     console.error(error);
     if (error.code === 11000) {
       return res
-        .status(ERROR_400)
+        .status(ERROR_409)
         .json({ message: "User with this email already exists" });
     }
     if (error.name === "ValidationError") {
@@ -105,7 +112,8 @@ const login = async (req, res) => {
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
     return res.status(200).json({ token });
   } catch (error) {
-    return res.status(ERROR_401).json({ message: error.message });
+    console.error(error);
+    return res.status(ERROR_400).json({ message: error.message });
   }
 };
 const updateUser = async (req, res) => {
