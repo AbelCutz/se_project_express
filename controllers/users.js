@@ -99,7 +99,7 @@ const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await User.findUserByCredentials({ email });
+    const user = await User.findUserByCredentials(email);
     if (!user) {
       throw new Error("Incorrect email or password");
     }
