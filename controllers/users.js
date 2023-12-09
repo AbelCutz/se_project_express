@@ -1,7 +1,7 @@
-const User = require("../models/user");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
+const User = require("../models/user");
 const {
   ERROR_400,
   ERROR_401,
@@ -97,23 +97,16 @@ const createUser = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-
+  console.log(email, password);
   try {
-    const user = await User.findUserByCredentials(email);
-    if (!user) {
-      throw new Error("Incorrect email or password");
-    }
-
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
-    if (!isPasswordMatch) {
-      throw new Error("Incorrect email or password");
-    }
+    const user = await User.findUserByCredentials(email, password);
 
     const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+
     return res.status(200).json({ token });
   } catch (error) {
     console.error(error);
-    return res.status(ERROR_400).json({ message: error.message });
+    return res.status(ERROR_401).json({ message: error.message });
   }
 };
 const updateUser = async (req, res) => {
@@ -161,8 +154,9 @@ const updateProfile = async (req, res) => {
     return res.status(200).json(user);
   } catch (error) {
     if (error.name === "ValidationError") {
-      return res.status(ERROR_400).json({ message: "Internal Server Error" });
+      return res.status(ERROR_400).json({ message: error.message });
     }
+    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 

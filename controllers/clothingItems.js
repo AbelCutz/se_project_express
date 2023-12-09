@@ -1,4 +1,3 @@
-const { restart } = require("nodemon");
 const ClothingItem = require("../models/clothingItem");
 const {
   ERROR_400,
