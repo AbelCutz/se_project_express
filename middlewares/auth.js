@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("../utils/config");
-const { ERROR_401, ERROR_500 } = require("../utils/errors");
+const { ERROR_401 } = require("../utils/errors");
 
 const authMiddleware = (req, res, next) => {
   const { authorization } = req.headers;
@@ -16,7 +16,7 @@ const authMiddleware = (req, res, next) => {
     const payload = jwt.verify(token, JWT_SECRET);
 
     req.user = payload;
-    next();
+    return next();
   } catch (error) {
     if (error.name === "TokenExpiredError") {
       return res
@@ -27,7 +27,6 @@ const authMiddleware = (req, res, next) => {
       .status(ERROR_401)
       .json({ message: "Unauthorized: Invalid token" });
   }
-  return res.status(ERROR_500).json({ error: "Internal Server Error" });
 };
 
 module.exports = authMiddleware;

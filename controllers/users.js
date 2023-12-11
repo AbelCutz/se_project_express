@@ -24,6 +24,7 @@ const getUser = async (req, res) => {
   try {
     const { userId } = req.params;
     const userData = await User.findById(userId).orFail();
+    console.log("userData:", userData);
     return res.status(200).json({ data: userData });
   } catch (error) {
     console.error(error);
@@ -62,7 +63,7 @@ const getCurrentUser = async (req, res) => {
 const createUser = async (req, res) => {
   try {
     const { name, avatar, email, password } = req.body;
-    if (!name || !avatar || !email || !password) {
+    if (!email || !password) {
       return res
         .status(ERROR_400)
         .json({ message: "Name, Avatar, Email and Password are required" });
@@ -77,10 +78,19 @@ const createUser = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = new User({ name, avatar, email, password: hashedPassword });
-    const savedUser = await newUser.save();
+    await User.create({
+      name,
+      avatar,
+      email,
+      password: hashedPassword,
+    });
 
-    return res.status(201).json(savedUser);
+    const savedUser = {
+      name,
+      avatar,
+      email,
+    };
+    return res.status(201).json({ data: savedUser });
   } catch (error) {
     console.error(error);
     if (error.code === 11000) {
@@ -106,7 +116,7 @@ const login = async (req, res) => {
     return res.status(200).json({ token });
   } catch (error) {
     console.error(error);
-    return res.status(ERROR_401).json({ message: error.message });
+    return res.status(ERROR_400).json({ message: error.message });
   }
 };
 const updateUser = async (req, res) => {
