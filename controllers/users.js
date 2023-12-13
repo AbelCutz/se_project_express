@@ -4,7 +4,6 @@ const { JWT_SECRET } = require("../utils/config");
 const User = require("../models/user");
 const {
   ERROR_400,
-  ERROR_401,
   ERROR_404,
   ERROR_409,
   ERROR_500,
@@ -40,18 +39,18 @@ const getUser = async (req, res) => {
 
 const getCurrentUser = async (req, res) => {
   try {
-    if (!req.user) {
-      return res
-        .status(ERROR_401)
-        .json({ message: "Unauthorized - User not authenticated" });
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(ERROR_404).json({ message: "User not found" });
     }
 
-    const userData = req.user;
-
     const response = {
-      _id: userData._id,
-      name: userData.name,
-      email: userData.email,
+      _id: user._id,
+      name: user.name,
+      email: user.email,
     };
     return res.status(200).json(response);
   } catch (error) {
