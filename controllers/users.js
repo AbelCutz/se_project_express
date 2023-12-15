@@ -4,6 +4,7 @@ const { JWT_SECRET } = require("../utils/config");
 const User = require("../models/user");
 const {
   ERROR_400,
+  ERROR_401,
   ERROR_404,
   ERROR_409,
   ERROR_500,
@@ -67,7 +68,11 @@ const createUser = async (req, res) => {
 
 const login = async (req, res) => {
   const { email, password } = req.body;
-
+  if (!email || !password) {
+    return res
+      .status(ERROR_400)
+      .json({ message: " Incorrect email or password" });
+  }
   try {
     const user = await User.findUserByCredentials(email, password);
 
@@ -76,7 +81,11 @@ const login = async (req, res) => {
     return res.status(200).json({ token });
   } catch (error) {
     console.error(error);
-    return res.status(ERROR_400).json({ message: error.message });
+    if (error.message === "Incorrect email or password") {
+      return res.status(ERROR_401).json({ message: error.message });
+    } else {
+      return res.status(ERROR_500).json({ error: "Internal Server Error" });
+    }
   }
 };
 
