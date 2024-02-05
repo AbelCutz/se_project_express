@@ -1,32 +1,27 @@
+const { NODE_ENV, JWT_SECRET } = process.env;
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../utils/config");
-const { ERROR_401 } = require("../utils/errors");
+const { UnauthorizedError } = require("./errorHandler");
 
 const authMiddleware = (req, res, next) => {
   const { authorization } = req.headers;
   if (!authorization || !authorization.startsWith("Bearer ")) {
-    return res
-      .status(ERROR_401)
-      .json({ message: "Unauthorized: Missing or invalid token" });
+    throw new UnauthorizedError("Authorization required");
   }
 
   const token = authorization.replace("Bearer ", "");
+  let payload;
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-
-    req.user = payload;
-    return next();
-  } catch (error) {
-    if (error.name === "TokenExpiredError") {
-      return res
-        .status(ERROR_401)
-        .json({ message: "Unauthorized: Token has expired" });
-    }
-    return res
-      .status(ERROR_401)
-      .json({ message: "Unauthorized: Invalid token" });
+    payload = jwt.verify(
+      token,
+      NODE_ENV === "production" ? JWT_SECRET : "dev-secret"
+    );
+  } catch (err) {
+    throw new UnauthorizedError("Authorization required");
   }
+
+  req.user = payload;
+  return next();
 };
 
 module.exports = authMiddleware;

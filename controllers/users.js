@@ -1,23 +1,20 @@
+const { NODE_ENV, JWT_SECRET } = process.env;
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET } = require("../utils/config");
 const User = require("../models/user");
-const {
-  ERROR_400,
-  ERROR_401,
-  ERROR_404,
-  ERROR_409,
-  ERROR_500,
-} = require("../utils/errors");
+const { BadRequestError } = require("../middlewares/BadRequestError");
+const { UnauthorizedError } = require("../middlewares/UnauthorizedError");
+const { NotFoundError } = require("../middlewares/NotFoundError");
+const { ConflictError } = require("../middlewares/ConflictError");
 
-const getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req, res, next) => {
   try {
     const userId = req.user._id;
 
     const user = await User.findById(userId);
 
     if (!user) {
-      return res.status(ERROR_404).json({ message: "User not found" });
+      return next(new NotFoundError("User not found"));
     }
 
     const response = {
@@ -29,11 +26,15 @@ const getCurrentUser = async (req, res) => {
     return res.status(200).json(response);
   } catch (error) {
     console.error(error);
-    return res.status(ERROR_500).json({ message: "Internal Sever Error" });
+    if (error.name === "ValidationError" || error.name === "CastError") {
+      next(new BadRequestError("Invalid request"));
+    } else {
+      next(error);
+    }
   }
 };
 
-const createUser = async (req, res) => {
+const createUser = async (req, res, next) => {
   try {
     const { name, avatar, email, password } = req.body;
 
@@ -55,53 +56,50 @@ const createUser = async (req, res) => {
   } catch (error) {
     console.error(error);
     if (error.code === 11000) {
-      return res
-        .status(ERROR_409)
-        .json({ message: "User with this email already exists" });
+      next(new ConflictError("User with this email already exists"));
     }
     if (error.name === "ValidationError") {
-      return res.status(ERROR_400).json({ message: error.message });
+      next(new BadRequestError("User with this email already exists"));
     }
-    return res.status(ERROR_500).json({ error: "Internal Server Error" });
+    next(error);
   }
 };
 
-const login = async (req, res) => {
+const login = async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    return res
-      .status(ERROR_400)
-      .json({ message: " Incorrect email or password" });
+    next(new BadRequestError(" Incorrect email or password"))();
   }
   try {
     const user = await User.findUserByCredentials(email, password);
 
-    const token = jwt.sign({ _id: user._id }, JWT_SECRET, { expiresIn: "7d" });
+    const token = jwt.sign(
+      { _id: user._id },
+      NODE_ENV === "production" ? JWT_SECRET : "dev-secret",
+      { expiresIn: "7d" }
+    );
 
     return res.status(200).json({ token });
   } catch (error) {
     console.error(error);
-    if (error.message === "Incorrect email or password") {
-      return res.status(ERROR_401).json({ message: error.message });
+    if (error.message === " Incorrect email or password") {
+      next(new UnauthorizedError(" Incorrect email or password"));
     }
-    return res.status(ERROR_500).json({ error: "Internal Server Error" });
+    next(error);
   }
 };
 
-const updateProfile = async (req, res) => {
+const updateProfile = async (req, res, next) => {
   try {
     const { name, avatar } = req.body;
 
     if (!name && !avatar) {
-      return res
-        .status(ERROR_400)
-        .json({ message: "Name or Avatar is required for update" });
+      next(new BadRequestError("Name or Avatar is required for update"));
     }
 
     const updatedUser = {};
     if (name) updatedUser.name = name;
     if (avatar) updatedUser.avatar = avatar;
-
     const userId = req.user._id;
     const user = await User.findByIdAndUpdate(
       userId,
@@ -110,14 +108,14 @@ const updateProfile = async (req, res) => {
     );
 
     if (!user) {
-      return res.status(ERROR_404).json({ message: "User not found" });
+      next(new NotFoundError("User not found"));
     }
     return res.status(200).json(user);
   } catch (error) {
     if (error.name === "ValidationError") {
-      return res.status(ERROR_400).json({ message: error.message });
+      next(new BadRequestError("Incorrect user"));
     }
-    return res.status(ERROR_500).json({ error: "Internal Server Error" });
+    next(error);
   }
 };
 

@@ -1,20 +1,17 @@
 const ClothingItem = require("../models/clothingItem");
-const {
-  ERROR_400,
-  ERROR_403,
-  ERROR_404,
-  ERROR_500,
-} = require("../utils/errors");
+const { BadRequestError } = require("../middlewares/BadRequestError");
+const { ForbiddenError } = require("../middlewares/ForbiddenError");
+const { NotFoundError } = require("../middlewares/NotFoundError");
 
-const getItem = (req, res) => {
+const getItem = (req, res, next) => {
   ClothingItem.find({})
     .then((items) => res.send({ items }))
     .catch((error) => {
       console.error(error);
-      res.status(ERROR_500).send({ message: "Error from getItems" });
+      next(error);
     });
 };
-const createItem = async (req, res) => {
+const createItem = async (req, res, next) => {
   console.log(req);
   console.log(req.body);
   console.log(req._id);
@@ -31,13 +28,14 @@ const createItem = async (req, res) => {
   } catch (error) {
     console.error(error);
     if (error.name === "ValidationError") {
-      return res.status(ERROR_400).json({ message: error.message });
+      next(new BadRequestError("Invaild request to create item"));
+    } else {
+      next(error);
     }
-    return res.status(ERROR_500).json({ error: "Internal Server Error" });
   }
 };
 
-const deleteItem = async (req, res) => {
+const deleteItem = async (req, res, next) => {
   try {
     const { itemId } = req.params;
     const userId = req.user._id;
@@ -45,28 +43,26 @@ const deleteItem = async (req, res) => {
     const item = await ClothingItem.findById(itemId);
 
     if (!item) {
-      return res.status(ERROR_404).json({ message: "Clothing item not found" });
+      return next(new NotFoundError("Clothing item not found"));
     }
 
     if (item.owner.toString() !== userId.toString()) {
-      return res
-        .status(ERROR_403)
-        .json({ message: "You do not have permission to delete this item" });
+      next(
+        new ForbiddenError("You do not have permission to delete this item")
+      );
     }
     await item.remove();
     return res.status(200).json({ itemId });
   } catch (error) {
-    console.error();
+    console.error(error);
     if (error.name === "CastError") {
-      return res
-        .status(ERROR_400)
-        .json({ message: "Invalid ID in deleteItem" });
+      next(new BadRequestError("Invalid ID in deleteItem"));
     }
-    return res.status(ERROR_500).send({ message: "Error from deleteItems" });
+    next(error);
   }
 };
 
-const likeItem = async (req, res) => {
+const likeItem = async (req, res, next) => {
   try {
     const userId = req.user._id;
     const item = await ClothingItem.findByIdAndUpdate(
@@ -75,19 +71,19 @@ const likeItem = async (req, res) => {
       { new: true }
     );
     if (!item) {
-      return res.status(ERROR_404).send({ message: "Clothing item not found" });
+      return next(new NotFoundError("Clothing item not found"));
     }
     return res.status(200).send({ data: item });
   } catch (error) {
     console.error(error);
     if (error.name === "CastError") {
-      return res.status(ERROR_400).json({ message: "Invalid request" });
+      next(new BadRequestError("Invalid request"));
     }
-    return res.status(ERROR_500).json({ message: "Error from likeItem" });
+    next(error);
   }
 };
 
-const dislikeItem = async (req, res) => {
+const dislikeItem = async (req, res, next) => {
   ClothingItem.findByIdAndUpdate(
     req.params.itemId,
     { $pull: { likes: req.user._id } },
@@ -95,20 +91,16 @@ const dislikeItem = async (req, res) => {
   )
     .then((item) => {
       if (!item) {
-        return res
-          .status(ERROR_404)
-          .json({ message: "Clothing item not found" });
+        return next(new NotFoundError("Clothing item not found"));
       }
       return res.status(200).send({ data: item });
     })
     .catch((error) => {
       console.error(error);
       if (error.name === "CastError") {
-        return res
-          .status(ERROR_400)
-          .json({ message: "Invalid ID in dislikeItem" });
+        next(new BadRequestError("Invalid ID in dislikeItem"));
       }
-      return res.status(ERROR_500).send({ message: "Error from dislikeItem" });
+      next(error);
     });
 };
 module.exports = {
