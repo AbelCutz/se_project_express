@@ -47,12 +47,8 @@ const validateUserInfo = celebrate({
 
 const validateLoginUser = celebrate({
   body: Joi.object().keys({
-    name: Joi.string().required().email().messages({
+    email: Joi.string().required().email().messages({
       "string.email": '"Email" field must be email format',
-    }),
-    avatar: Joi.string().required().custom(validateURL).messages({
-      "string.empty": 'The "Avatar" field must be filled in',
-      "string.uri": 'The "Avatar" field must be a valid url',
     }),
     password: Joi.string().required(),
   }),
@@ -61,7 +57,7 @@ const validateLoginUser = celebrate({
 const validateUserAndItemId = celebrate({
   body: Joi.object().keys({
     params: Joi.object().keys({
-      itemId: Joi.string().hex().length(24),
+      itemId: Joi.string().hex().length(24).required(),
     }),
   }),
 });
