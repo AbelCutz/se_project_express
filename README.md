@@ -55,4 +55,4 @@ Please see _GitHub_ link for the full project.
 
 # Domain webpage
 
-[URL](https://www.explorerwtwr.crabdance.com/#/)
+[URL](api.explorerwtwr.crabdance.com)

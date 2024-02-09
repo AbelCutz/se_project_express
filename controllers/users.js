@@ -28,9 +28,8 @@ const getCurrentUser = async (req, res, next) => {
     console.error(error);
     if (error.name === "ValidationError" || error.name === "CastError") {
       next(new BadRequestError("Invalid request"));
-    } else {
-      next(error);
     }
+    return next(error);
   }
 };
 
@@ -61,14 +60,14 @@ const createUser = async (req, res, next) => {
     if (error.name === "ValidationError") {
       next(new BadRequestError("User with this email already exists"));
     }
-    next(error);
+    return next(error);
   }
 };
 
 const login = async (req, res, next) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    next(new BadRequestError(" Incorrect email or password"))();
+    next(new BadRequestError("Incorrect email or password"))();
   }
   try {
     const user = await User.findUserByCredentials(email, password);
@@ -82,10 +81,10 @@ const login = async (req, res, next) => {
     return res.status(200).json({ token });
   } catch (error) {
     console.error(error);
-    if (error.message === " Incorrect email or password") {
-      next(new UnauthorizedError(" Incorrect email or password"));
+    if (error.message === "Incorrect email or password") {
+      next(new UnauthorizedError("Incorrect email or password"));
     }
-    next(error);
+    return next(error);
   }
 };
 
@@ -115,7 +114,7 @@ const updateProfile = async (req, res, next) => {
     if (error.name === "ValidationError") {
       next(new BadRequestError("Incorrect user"));
     }
-    next(error);
+    return next(error);
   }
 };
 

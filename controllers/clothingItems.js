@@ -29,9 +29,8 @@ const createItem = async (req, res, next) => {
     console.error(error);
     if (error.name === "ValidationError") {
       next(new BadRequestError("Invaild request to create item"));
-    } else {
-      next(error);
     }
+    return next(error);
   }
 };
 
@@ -47,7 +46,7 @@ const deleteItem = async (req, res, next) => {
     }
 
     if (item.owner.toString() !== userId.toString()) {
-      next(
+      return next(
         new ForbiddenError("You do not have permission to delete this item")
       );
     }
@@ -58,7 +57,7 @@ const deleteItem = async (req, res, next) => {
     if (error.name === "CastError") {
       next(new BadRequestError("Invalid ID in deleteItem"));
     }
-    next(error);
+    return next(error);
   }
 };
 
@@ -71,7 +70,7 @@ const likeItem = async (req, res, next) => {
       { new: true }
     );
     if (!item) {
-      return next(new NotFoundError("Clothing item not found"));
+      next(new NotFoundError("Clothing item not found"));
     }
     return res.status(200).send({ data: item });
   } catch (error) {
@@ -79,7 +78,7 @@ const likeItem = async (req, res, next) => {
     if (error.name === "CastError") {
       next(new BadRequestError("Invalid request"));
     }
-    next(error);
+    return next(error);
   }
 };
 
@@ -100,7 +99,7 @@ const dislikeItem = async (req, res, next) => {
       if (error.name === "CastError") {
         next(new BadRequestError("Invalid ID in dislikeItem"));
       }
-      next(error);
+      return next(error);
     });
 };
 module.exports = {

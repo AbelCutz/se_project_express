@@ -34,7 +34,7 @@ app.post("/signup", validateUserInfo, createUser);
 
 app.use(routes);
 app.use(errorLogger);
-app.use(errors);
+app.use(errors());
 app.use(handleServerError);
 
 app.listen(PORT, () => {
