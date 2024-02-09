@@ -53,6 +53,6 @@ Please see _GitHub_ link for the full project.
 
 [URL](https://github.com/AbelCutz/se_project_express)
 
-# Domain webpage
+# Domain api
 
 [URL](api.explorerwtwr.crabdance.com)
